@@ -1,6 +1,8 @@
 import { type inferAsyncReturnType } from "@trpc/server";
 import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import { type Session } from "next-auth";
+import { Configuration, OpenAIApi } from "openai";
+import { env } from "../../env/server.mjs";
 
 import { getServerAuthSession } from "../common/get-server-auth-session";
 import { prisma } from "../db/client";
@@ -9,14 +11,22 @@ type CreateContextOptions = {
   session: Session | null;
 };
 
+const configuration = new Configuration({
+  apiKey: env.OPENAI_API_KEY,
+});
+
 /** Use this helper for:
  * - testing, so we dont have to mock Next.js' req/res
  * - trpc's `createSSGHelpers` where we don't have req/res
  * @see https://create.t3.gg/en/usage/trpc#-servertrpccontextts
  **/
 export const createContextInner = async (opts: CreateContextOptions) => {
+  if(!opts.session) throw new Error("No session found");
+  if(!configuration.apiKey) throw new Error("No or invalid API key found");
+
   return {
     session: opts.session,
+    openai: new OpenAIApi(configuration),
     prisma,
   };
 };
