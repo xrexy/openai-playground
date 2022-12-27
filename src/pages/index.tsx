@@ -56,19 +56,19 @@ const Home: NextPage = () => {
         ) : (
           <>
             {JSON.stringify(meta)}
-            <TypeShowcaseComponent
+            <ShowcaseComponent
               data={websiteColors}
               metaKey="color"
               title="Please choose a color"
               toggleType={{ setMeta, toggleType }}
             />
-            <TypeShowcaseComponent
+            <ShowcaseComponent
               data={websiteTypes}
               metaKey="type"
               title="Please choose a type"
               toggleType={{ setMeta, toggleType }}
             />
-            <TypeShowcaseComponent
+            <ShowcaseComponent
               data={websiteThemes}
               metaKey="theme"
               title="Please choose a theme"
@@ -83,7 +83,7 @@ const Home: NextPage = () => {
 
 export default Home;
 
-function TypeShowcaseComponent<MetaKey extends WebsiteMetaKey>({
+function ShowcaseComponent<MetaKey extends WebsiteMetaKey>({
   data,
   toggleType: { setMeta, toggleType },
   title,
@@ -99,7 +99,7 @@ function TypeShowcaseComponent<MetaKey extends WebsiteMetaKey>({
       <h2 className="pb-2 text-2xl font-bold">{title}</h2>
       <div className="flex w-full flex-row flex-wrap gap-2">
         {data.map((metaData) => (
-          <TypeShowcase
+          <SingularShowcase
             key={metaData}
             metaData={metaData}
             metaKey={metaKey}
@@ -112,8 +112,7 @@ function TypeShowcaseComponent<MetaKey extends WebsiteMetaKey>({
   );
 }
 
-// fix this
-function TypeShowcase<MetaKey extends WebsiteMetaKey>({
+function SingularShowcase<MetaKey extends WebsiteMetaKey>({
   toggleType: { setMeta, toggleType },
   metaKey,
   metaData,
