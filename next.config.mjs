@@ -13,5 +13,8 @@ const config = {
     locales: ["en"],
     defaultLocale: "en",
   },
+  images: {
+    domains: ["oaidalleapiprodscus.blob.core.windows.net"],
+  },
 };
 export default config;
