@@ -1,4 +1,4 @@
-export const themes = [""] as const;
+export const themes = ["theme"] as const;
 
 export const types = [
   "ecommerce",
@@ -48,6 +48,12 @@ export const colors = [
   "white",
 ] as const;
 
-export type WebsiteTheme = typeof themes[number];
-export type WebsiteType = typeof types[number];
-export type WebsiteColor = typeof colors[number];
+export type WebsiteMeta<Key extends keyof WebsiteRecord> = WebsiteRecord[Key];
+
+export type WebsiteRecord = {
+  theme: typeof themes;
+  type: typeof types;
+  color: typeof colors;
+};
+
+export type WebsiteMetaKey = keyof WebsiteRecord;

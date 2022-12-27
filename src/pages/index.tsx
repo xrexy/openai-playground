@@ -1,16 +1,44 @@
 import { type NextPage } from "next";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
-import Image from "next/image";
-import { useState } from "react";
-import { useDebounce } from "../utils/hooks";
+import React, { useState } from "react";
 
 import { trpc } from "../utils/trpc";
-import type { WebsiteType } from "../utils/website_meta";
-import { types as websiteTypes } from "../utils/website_meta";
+import type { WebsiteMetaKey, WebsiteRecord } from "../utils/website_meta";
+import {
+  colors as websiteColors,
+  types as websiteTypes,
+  themes as websiteThemes,
+} from "../utils/website_meta";
+
+interface ToggleableType {
+  toggleType: typeof toggleType;
+  setMeta: React.Dispatch<
+    React.SetStateAction<{
+      [key in WebsiteMetaKey]: WebsiteRecord[key][number][];
+    }>
+  >;
+}
+
+function toggleType<MetaKey extends WebsiteMetaKey>(
+  key: MetaKey,
+  data: WebsiteRecord[MetaKey][number],
+  active: boolean,
+  onActive: (data: WebsiteRecord[MetaKey][number], key: MetaKey) => void,
+  onInactive: (data: WebsiteRecord[MetaKey][number], key: MetaKey) => void
+) {
+  active ? onActive(data, key) : onInactive(data, key);
+}
 
 const Home: NextPage = () => {
   const { data: sessionData } = useSession();
+  const [meta, setMeta] = useState<{
+    [key in WebsiteMetaKey]: WebsiteRecord[key][number][];
+  }>({
+    color: [],
+    theme: [],
+    type: [],
+  });
 
   return (
     <>
@@ -20,16 +48,32 @@ const Home: NextPage = () => {
         {/* <link rel="icon" href="/favicon.ico" /> */}
       </Head>
 
-      <main className="text-900 flex min-h-screen flex-col items-center bg-gradient-to-b from-slate-800 to-gray-900 text-white">
+      <main className="text-900 flex min-h-screen flex-col items-center bg-gradient-to-b from-slate-800 to-gray-900 px-6 font-sans text-white">
         <AuthShowcase />
 
         {sessionData?.user === undefined ? (
           <UnauthorizedView />
         ) : (
           <>
-            {websiteTypes.map((type) => (
-              <TypeShowcase key={type} type={type} />
-            ))}
+            {JSON.stringify(meta)}
+            <TypeShowcaseComponent
+              data={websiteColors}
+              metaKey="color"
+              title="Please choose a color"
+              toggleType={{ setMeta, toggleType }}
+            />
+            <TypeShowcaseComponent
+              data={websiteTypes}
+              metaKey="type"
+              title="Please choose a type"
+              toggleType={{ setMeta, toggleType }}
+            />
+            <TypeShowcaseComponent
+              data={websiteThemes}
+              metaKey="theme"
+              title="Please choose a theme"
+              toggleType={{ setMeta, toggleType }}
+            />
           </>
         )}
       </main>
@@ -39,48 +83,81 @@ const Home: NextPage = () => {
 
 export default Home;
 
-const TypeShowcase: React.FC<{ type: WebsiteType }> = ({ type }) => {
-  return <div>{type}</div>;
-};
-
-/** @deprecated */
-const TemporaryOpenAiView: React.FC = () => {
-  const [__prompt, setPrompt] = useState("");
-  const prompt = useDebounce(__prompt, 1000);
-
-  const { data: imageSrc, isFetching } = trpc.openai.generateImage.useQuery(
-    {
-      prompt: prompt || "",
-    },
-    {
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      cacheTime: 1 * 60 * 60,
-      trpc: { abortOnUnmount: true },
-      enabled: prompt !== "",
-    }
+function TypeShowcaseComponent<MetaKey extends WebsiteMetaKey>({
+  data,
+  toggleType: { setMeta, toggleType },
+  title,
+  metaKey,
+}: {
+  data: WebsiteRecord[MetaKey];
+  toggleType: ToggleableType;
+  title: string;
+  metaKey: MetaKey;
+}) {
+  return (
+    <div>
+      <h2 className="pb-2 text-2xl font-bold">{title}</h2>
+      <div className="flex w-full flex-row flex-wrap gap-2">
+        {data.map((metaData) => (
+          <TypeShowcase
+            key={metaData}
+            metaData={metaData}
+            metaKey={metaKey}
+            toggleType={{ toggleType, setMeta }}
+            title={title}
+          />
+        ))}
+      </div>
+    </div>
   );
+}
+
+// fix this
+function TypeShowcase<MetaKey extends WebsiteMetaKey>({
+  toggleType: { setMeta, toggleType },
+  metaKey,
+  metaData,
+}: {
+  metaKey: MetaKey;
+  metaData: WebsiteRecord[MetaKey][number];
+  toggleType: ToggleableType;
+  title: string;
+}) {
+  const [isActive, setIsActive] = useState(false);
 
   return (
-    <>
-      <input
-        className="text-gray-900"
-        onChange={(e) => setPrompt(e.target.value)}
-      />
-      {prompt}
-      {isFetching && <p>Fetching...</p>}
-      {imageSrc?.url && (
-        <Image
-          src={imageSrc.url}
-          alt="Randomly generated image"
-          width={512}
-          height={512}
-        />
-      )}
-    </>
+    <div
+      data-active={isActive}
+      onClick={() => {
+        setIsActive(!isActive);
+        toggleType(
+          metaKey,
+          metaData,
+          isActive,
+          (data, key) => {
+            console.log(data, key, "active");
+
+            setMeta((prev) => {
+              const newMeta = prev[key].filter((meta) => meta !== data);
+              return { ...prev, [key]: newMeta };
+            });
+          },
+          (data, key) => {
+            console.log(data, key, "inactive");
+
+            setMeta((prev) => {
+              const newMeta = [...prev[key], data];
+              return { ...prev, [key]: newMeta };
+            });
+          }
+        );
+      }}
+      className="w-fit cursor-pointer rounded-full bg-slate-600/25 px-6 py-2 font-semibold capitalize text-white no-underline transition hover:bg-slate-500/25 data-[active=true]:bg-slate-600/50 data-[active=true]:hover:bg-slate-500/50"
+    >
+      {metaData.includes("_") ? metaData.split("_").join(" ") : metaData}
+    </div>
   );
-};
+}
 
 const UnauthorizedView: React.FC = () => {
   return (
