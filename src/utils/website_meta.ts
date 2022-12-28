@@ -57,3 +57,7 @@ export type WebsiteRecord = {
 };
 
 export type WebsiteMetaKey = keyof WebsiteRecord;
+
+export type MetaState = {
+  [key in WebsiteMetaKey]: WebsiteRecord[key][number][];
+};

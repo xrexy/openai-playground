@@ -1,10 +1,15 @@
 import { type NextPage } from "next";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
+import Image from "next/image";
 import React, { useState } from "react";
 
 import { trpc } from "../utils/trpc";
-import type { WebsiteMetaKey, WebsiteRecord } from "../utils/website_meta";
+import type {
+  MetaState,
+  WebsiteMetaKey,
+  WebsiteRecord,
+} from "../utils/website_meta";
 import {
   colors as websiteColors,
   types as websiteTypes,
@@ -32,13 +37,14 @@ function toggleType<MetaKey extends WebsiteMetaKey>(
 
 const Home: NextPage = () => {
   const { data: sessionData } = useSession();
-  const [meta, setMeta] = useState<{
-    [key in WebsiteMetaKey]: WebsiteRecord[key][number][];
-  }>({
+  const [meta, setMeta] = useState<MetaState>({
     color: [],
     theme: [],
     type: [],
   });
+
+  const { mutate: generateImage, data: latestGeneration } =
+    trpc.openai.generateImage.useMutation();
 
   return (
     <>
@@ -74,6 +80,28 @@ const Home: NextPage = () => {
               title="Please choose a theme"
               toggleType={{ setMeta, toggleType }}
             />
+
+            <button
+              onClick={() =>
+                generateImage({
+                  color: meta.color,
+                  theme: meta.theme,
+                  type: meta.type,
+                })
+              }
+              className="rounded-full bg-teal-400/50 px-6 py-2 font-semibold hover:bg-teal-500/50"
+            >
+              Generate
+            </button>
+
+            {latestGeneration && (
+              <Image
+                width={512}
+                height={512}
+                src={latestGeneration.url}
+                alt="latest generaton"
+              />
+            )}
           </>
         )}
       </main>
@@ -95,7 +123,7 @@ function ShowcaseComponent<MetaKey extends WebsiteMetaKey>({
   metaKey: MetaKey;
 }) {
   return (
-    <div>
+    <div className="w-full">
       <h2 className="pb-2 text-2xl font-bold">{title}</h2>
       <div className="flex w-full flex-row flex-wrap gap-2">
         {data.map((metaData) => (
