@@ -82,13 +82,7 @@ const Home: NextPage = () => {
             />
 
             <button
-              onClick={() =>
-                generateImage({
-                  color: meta.color,
-                  theme: meta.theme,
-                  type: meta.type,
-                })
-              }
+              onClick={() => generateImage(meta)}
               className="rounded-full bg-teal-400/50 px-6 py-2 font-semibold hover:bg-teal-500/50"
             >
               Generate
